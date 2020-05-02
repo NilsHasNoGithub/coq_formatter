@@ -1,6 +1,9 @@
+#!/usr/bin/env python3
+
 """
 Version 0.3
 """
+
 
 import argparse
 from enum import Enum
@@ -263,7 +266,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Formats a coq file")
     parser.add_argument("input_file", type=str)
     parser.add_argument("output_file", type=str)
-    parser.add_argument("--use-tabs", action="store_true", help="sets the script to use tabs instead of spaces")
-    parser.add_argument("--spaces", type=int, default=4, help="sets the amount of spaces")
+    parser.add_argument("--use-tabs", action="store_true", help="use tabs instead of spaces")
+    parser.add_argument("--spaces", type=int, default=4, help="sets the amount of spaces to indent with")
     args = parser.parse_args()
     main(args.input_file, args.output_file, space_amount=args.spaces, use_tabs=args.use_tabs)
