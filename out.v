@@ -19,9 +19,9 @@ Definition Def :=
             \/
                 (
                     exists c:C,
-                            isOkC c
-                        ->
                             isOkA a
+                        ->
+                            isOkC c
                 )
 .
 

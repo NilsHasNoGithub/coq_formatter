@@ -11,7 +11,7 @@ Variable isOkB : B -> Prop.
 Variable isOkC : C -> Prop.
 
 Definition Def :=
-forall a:A, exists b:B, isOkA a /\ isOkB b \/ (exists c:C, isOkC c -> isOkA a).
+forall a:A, exists b:B, isOkA a /\ isOkB b \/ (exists c:C, isOkA a -> isOkC c).
 
 Theorem T :
 forall a:A,
