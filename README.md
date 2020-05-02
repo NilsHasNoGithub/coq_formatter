@@ -5,18 +5,30 @@ A script which formats coq definitions and theorems. Make sure the coq file does
 
 ` in.v `:
 ```
-Definition Def :=
-forall a:A, exists b:B, a /\ b \/ (exists c:C, c -> A).
+Variable A:Set.
 
-Theorem T:
+Variable B:Set.
+
+Variable C:Set.
+
+Variable isOkA : A -> Prop.
+
+Variable isOkB : B -> Prop.
+
+Variable isOkC : C -> Prop.
+
+Definition Def :=
+forall a:A, exists b:B, isOkA a /\ isOkB b \/ (exists c:C, isOkC c -> isOkA a).
+
+Theorem T :
 forall a:A,
 forall b:B,
 forall c:C,
-a
+isOkA a
 /\
-b
+isOkB b
 \/
-c
+isOkC c
 ->
 Def
 .
@@ -30,30 +42,42 @@ python coq_formatter.py in.v out.v
 
 Which results in the following `out.v`:
 ```
+Variable A:Set.
+
+Variable B:Set.
+
+Variable C:Set.
+
+Variable isOkA : A -> Prop.
+
+Variable isOkB : B -> Prop.
+
+Variable isOkC : C -> Prop.
+
 Definition Def :=
     forall a:A,
         exists b:B,
-                    a
+                    isOkA a
                 /\
-                    b
+                    isOkB b
             \/
                 (
                     exists c:C,
-                            c
+                            isOkC c
                         ->
-                            A
+                            isOkA a
                 )
 .
 
-Theorem T:
+Theorem T :
     forall a:A,
         forall b:B,
             forall c:C,
-                            a
+                            isOkA a
                         /\
-                            b
+                            isOkB b
                     \/
-                        c
+                        isOkC c
                 ->
                     Def
 .

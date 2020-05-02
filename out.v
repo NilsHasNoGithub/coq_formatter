@@ -1,27 +1,39 @@
+Variable A:Set.
+
+Variable B:Set.
+
+Variable C:Set.
+
+Variable isOkA : A -> Prop.
+
+Variable isOkB : B -> Prop.
+
+Variable isOkC : C -> Prop.
+
 Definition Def :=
     forall a:A,
         exists b:B,
-                    a
+                    isOkA a
                 /\
-                    b
+                    isOkB b
             \/
                 (
                     exists c:C,
-                            c
+                            isOkC c
                         ->
-                            A
+                            isOkA a
                 )
 .
 
-Theorem T:
+Theorem T :
     forall a:A,
         forall b:B,
             forall c:C,
-                            a
+                            isOkA a
                         /\
-                            b
+                            isOkB b
                     \/
-                        c
+                        isOkC c
                 ->
                     Def
 .
