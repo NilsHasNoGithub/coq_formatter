@@ -123,6 +123,7 @@ def format_def_(definition, cur_indent, n_spaces=4, use_tabs=False, do_indent=Tr
     try:
         ind = indent_str(cur_indent, n_spaces, use_tabs) if do_indent else ""
         new_indent = cur_indent + 1 if do_indent else cur_indent
+
         while definition[0] in white_chars:
             definition = definition[1:]
         while definition[-1] in white_chars:
@@ -164,12 +165,49 @@ def format_def_(definition, cur_indent, n_spaces=4, use_tabs=False, do_indent=Tr
     except IndexError:
         return [""]
 
-def format_def(definition, n_spaces=4, use_tabs=False):
-    #result = format_def_(definition, 1, n_spaces, use_tabs)
-    return "".join(format_def_(definition, 1, n_spaces, use_tabs))
+def format_def(definition, n_spaces=4, use_tabs=False, is_tac=False):
+    return "".join(format_def_(definition, 0 if is_tac else 1, n_spaces, use_tabs))
+
+
+def handle_possible_comment_reversed(content, i):
+    if content[:i].endswith("*)"):
+        return handle_comment_reverse(content, i)
+    return "", i
+
+def handle_possible_brackets_and_comments_reverse(content, i):
+    result = [""]
+    if content[:i+1].endswith(")"):
+        bc = 0
+        while True:
+            c, i = handle_possible_comment_reversed(content, i)
+            if c != "":
+                i -= 1
+                result.append(c)
+            
+            if content[i] in (")","]", "}"):
+                bc += 1
+            elif content[i] in ("(", "[", "{"):
+                bc -= 1
+
+            result.append(content[i])
+            i -= 1
+
+            if bc == 0:
+                return "".join(reversed(result)), i
+
+    return "", i
+
+def skip_to_dot(content, i):
+    while content[i] != ".":
+        if content[i:].startswith("(*"):
+            i = skip_comment(content, i)
+        else:
+            i += 1
+    return i
     
-def handle_format_item(content, i, start_delimiter, n_spaces=4, use_tabs=False):
+def handle_format_item(content, i, start_delimiter, n_spaces=4, use_tabs=False, tac=None):
     formatted = []
+
     try:
         while not content[i:].startswith(start_delimiter):
             formatted.append(content[i])
@@ -184,18 +222,39 @@ def handle_format_item(content, i, start_delimiter, n_spaces=4, use_tabs=False):
                 break
             i += 1
             
-
         start_i = i
 
-        while content[i] != ".":
-            if content[i:].startswith("(*"):
-                i = skip_comment(content, i)
-            else:
-                i += 1
+        i = skip_to_dot(content, i)
 
-        fmtd = format_def(content[start_i:i], n_spaces, use_tabs)
-       
+        after = []
+
+        if tac is not None and tac in ["all_e", "exi_e"]:
+            n_xargs = 1 if tac == "all_e" else 2
+            if content[i] == ".":
+                i -= 1
+            for _ in range(n_xargs):
+                while content[i] in white_chars:
+                    after.append(content[i])
+                    i -= 1
+                    
+                # Handle comments
+                while content[i] not in white_chars:
+                    c, i = handle_possible_brackets_and_comments_reverse(content, i)
+                    if c != "":
+                        after.append(c)
+                    after.append(content[i])
+                    i -= 1
+                    
+                
+        after = "".join(reversed(after))
+
+        fmtd = format_def(content[start_i:i], n_spaces, use_tabs, is_tac=tac is not None)
+        fmtd += after
+
+        i = skip_to_dot(content, i)
+
         formatted.append(fmtd)
+
         while content[i - 1] in (" ", "\t"):
             i -= 1
 
@@ -227,12 +286,16 @@ def handle_comment(content, i):
         unexpected_eof()
     
 
+formattable_tactics = ["all_e", "exi_e", "con_e1", "con_e2", "imp_e"]
+
+
 def format_(content:str, space_amount=4, use_tabs=False):
     out = []
     i = 0
     while i < len(content):
 
         do_format = False
+        f_tac = None
 
         if content[i:].startswith("Definition"):
             start_delim = ":="
@@ -240,10 +303,19 @@ def format_(content:str, space_amount=4, use_tabs=False):
         elif content[i:].startswith("Theorem"):
             start_delim = ":"
             do_format = True
+        else:
+            for tac in formattable_tactics:
+                if content[i:].startswith(tac):
+                    # out.append(tac)
+                    # i += len(tac)
+                    start_delim = tac
+                    f_tac = tac
+                    do_format = True
+                    break
 
 
         if do_format:
-            formatted_def, i = handle_format_item(content, i, start_delim, space_amount, use_tabs)
+            formatted_def, i = handle_format_item(content, i, start_delim, space_amount, use_tabs, tac=f_tac)
             out.append(formatted_def)
         elif content[i:].startswith("(*"):
             comment, i = handle_comment(content, i)
